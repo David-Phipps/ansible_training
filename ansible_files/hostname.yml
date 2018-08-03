@@ -1,0 +1,10 @@
+---
+  - hosts: all
+    become: yes
+    gather_facts: false
+    tasks:
+      - name: Set server hostname
+        hostname: name={{inventory_hostname}}
+
+      - name: Get server hostname
+        command: hostname

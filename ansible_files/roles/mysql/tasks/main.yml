@@ -1,0 +1,25 @@
+---
+- name: install tools
+  apt: name={{item}} state=present  
+  with_items:
+    - python-mysqldb
+    
+- name: install mysql-server
+  apt: name=mysql-server state=present  
+  
+# by default mysql listens only locally out of box, looks for line that begins with bind-address and subs with a new string. Can verify by running netstat -an on db host after change
+- name: ensure mysql listening on all ports
+  lineinfile: dest=/etc/mysql/my.cnf regexp=^bind-address 
+              line="bind-address = {{ ansible_eth1.ipv4.address }}"
+  notify: restart mysql
+  
+- name: ensure mysql started
+  service: name=mysql state=started enabled=yes
+  
+- name: create database
+  mysql_db: name={{  db_name }} state=present
+  
+  # has access to all tables in demo db and can connect from any host
+- name: create user
+  mysql_user: name={{db_user_name}} password={{db_user_pass}} priv={{  db_name }}.*:ALL 
+              host='{{db_user_host}}' state=present

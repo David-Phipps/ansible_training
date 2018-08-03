@@ -1,0 +1,43 @@
+---
+  # Bring stack down
+  - hosts: loadbalancer
+    gather_facts: false
+    become: true
+    tasks:
+      - name: stop nginx service
+        service: name=nginx state=stopped
+      - wait_for: port=80 state=drained
+
+  - hosts: webserver
+    gather_facts: false
+    become: true
+    tasks:
+      - name: stop web service
+        service: name=apache2 state=stopped
+      - wait_for: port=80 state=stopped
+ 
+  # Restart MySQL
+  - hosts: database
+    become: true
+    tasks:
+      - name: restart db service
+        service: name=mysql state=restarted
+      - wait_for: host={{ ansible_eth0.ipv4.address }} port=3306 state=started
+
+  # Bring stack back up
+  - hosts: webserver
+    gather_facts: false
+    become: true
+    tasks:
+      - name: start web service
+        service: name=apache2 state=started
+      - wait_for: port=80 state=started
+
+  - hosts: loadbalancer
+    gather_facts: false
+    become: true
+    tasks:
+      - name: start nginx service
+        service: name=nginx state=started
+      # state started is the default so we dont' need to add it
+      - wait_for: port=80
